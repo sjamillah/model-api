@@ -251,6 +251,8 @@ async def predict_mental_health(data: HealthDataInput):
         HTTPException: If prediction fails
     """
     try:
+        if model_info is None:
+            raise HTTPException(status_code=500, detail="Model not loaded.")
         # Convert input data to DataFrame
         df = pd.DataFrame([data.dict()])
         df.rename(
@@ -273,6 +275,10 @@ async def predict_mental_health(data: HealthDataInput):
 
         # Make prediction
         predictions = model_info["model"].predict(scaled_data)[0]
+        if predictions is None:
+            raise HTTPException(
+                status_code=500, detail="Prediction failed. Model returned None."
+            )
 
         # Get risk levels and confidence
         anxiety_risk, anxiety_conf = normalize_prediction(predictions[0])
