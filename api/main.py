@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 import pickle
 import pandas as pd
 import uvicorn
+import os
 from typing import List, Dict, Optional
 from model.gradient_descent import GradientDescentLinearRegression
 
@@ -163,24 +164,39 @@ async def redoc_html():
 # Updating the model loading code with better error handling
 def load_model():
     try:
-        # Make sure the GradientDescentLinearRegression class is imported and available
+        # Import the GradientDescentLinearRegression class
         from model.gradient_descent import GradientDescentLinearRegression
 
-        with open("mental_health_prediction_model.pkl", "rb") as file:
+        # Ensure the correct file path to the model
+        model_path = os.path.join(
+            os.path.dirname(__file__), "mental_health_prediction_model.pkl"
+        )
+        print(f"Loading model from: {model_path}")
+
+        with open(model_path, "rb") as file:
             model_info = pickle.load(file)
-        print("Model loaded successfully!")
+
+        # Log model_info to check what was loaded
+        print(f"Model loaded successfully: {model_info}")
+
+        if not model_info or "model" not in model_info or "scaler" not in model_info:
+            raise RuntimeError("Model or scaler is missing from the loaded model file.")
+
         return model_info
+
     except FileNotFoundError:
         raise RuntimeError(
             "Model file not found. Please ensure the model file exists in the correct location."
         )
     except Exception as e:
+        print(f"Error loading model: {str(e)}")
         raise RuntimeError(f"Failed to load model: {str(e)}")
 
 
 # Load the model at startup
 try:
     model_info = load_model()
+    print(f"Loaded model_info: {model_info}")
 except Exception as e:
     print(f"Error during model loading: {str(e)}")
     model_info = None
