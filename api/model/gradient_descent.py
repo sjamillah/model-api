@@ -2,8 +2,11 @@
 import numpy as np
 import pandas as pd
 
+
 class GradientDescentLinearRegression:
-    def __init__(self, learning_rate=0.001, n_iterations=1000, batch_size=32, print_cost=False):
+    def __init__(
+        self, learning_rate=0.001, n_iterations=1000, batch_size=32, print_cost=False
+    ):
         self.learning_rate = learning_rate
         self.n_iterations = n_iterations
         self.batch_size = batch_size
@@ -12,6 +15,14 @@ class GradientDescentLinearRegression:
         self.training_loss = []
         self.validation_loss = []
         self.print_cost = print_cost
+
+    def __getstate__(self):
+        """Return state values to be pickled."""
+        return self.__dict__
+
+    def __setstate__(self, state):
+        """Restore state from the unpickled state values."""
+        self.__dict__ = state
 
     def fit(self, X, y, validation_split=0.1):
         # Convert to numpy arrays if needed
@@ -34,7 +45,7 @@ class GradientDescentLinearRegression:
             # Mini-batch gradient descent
             indices = np.random.permutation(len(X_train))
             for i in range(0, len(X_train), self.batch_size):
-                batch_indices = indices[i:i + self.batch_size]
+                batch_indices = indices[i : i + self.batch_size]
                 X_batch = X_train[batch_indices]
                 y_batch = y_train[batch_indices]
 
@@ -42,8 +53,8 @@ class GradientDescentLinearRegression:
                 y_pred = np.dot(X_batch, self.weights) + self.bias
 
                 # Compute gradients
-                dw = -(1/len(X_batch)) * np.dot(X_batch.T, (y_batch - y_pred))
-                db = -(1/len(X_batch)) * np.sum(y_batch - y_pred, axis=0)
+                dw = -(1 / len(X_batch)) * np.dot(X_batch.T, (y_batch - y_pred))
+                db = -(1 / len(X_batch)) * np.sum(y_batch - y_pred, axis=0)
 
                 # Update parameters
                 self.weights -= self.learning_rate * dw
@@ -55,7 +66,9 @@ class GradientDescentLinearRegression:
                 val_pred = np.dot(X_val, self.weights) + self.bias
                 train_loss = np.mean((train_pred - y_train) ** 2)
                 val_loss = np.mean((val_pred - y_val) ** 2)
-                print(f"Iteration {iteration}, Training Loss: {train_loss:.4f}, Validation Loss: {val_loss:.4f}")
+                print(
+                    f"Iteration {iteration}, Training Loss: {train_loss:.4f}, Validation Loss: {val_loss:.4f}"
+                )
 
         return self
 

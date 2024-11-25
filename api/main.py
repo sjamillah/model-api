@@ -7,9 +7,84 @@ import pickle
 import pandas as pd
 import uvicorn
 import os
+import logging
+import sys
+from pathlib import Path
 from typing import List, Dict, Optional
 from model.gradient_descent import GradientDescentLinearRegression
 
+
+# Set up logging
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[logging.StreamHandler(sys.stdout)],
+)
+logger = logging.getLogger(__name__)
+
+
+def load_model():
+    """
+    Load the model with enhanced debugging and path resolution
+    """
+    try:
+        # Register the custom class for pickle
+        sys.modules["model.gradient_descent"] = sys.modules[
+            GradientDescentLinearRegression.__module__
+        ]
+
+        # Get various possible paths
+        current_file_dir = Path(__file__).parent.absolute()
+        model_dir = current_file_dir / "model"
+
+        # List all possible model locations
+        possible_paths = [
+            model_dir / "mental_health_prediction_model.pkl",
+            current_file_dir / "mental_health_prediction_model.pkl",
+        ]
+
+        # Debug information
+        logger.debug(f"Current file directory: {current_file_dir}")
+        logger.debug(f"Model directory: {model_dir}")
+        logger.debug("Checking following paths:")
+        for path in possible_paths:
+            logger.debug(f"- {path} (exists: {path.exists()})")
+
+        # Try loading from each path
+        for model_path in possible_paths:
+            if model_path.exists():
+                logger.info(f"Found model at: {model_path}")
+                try:
+                    with open(model_path, "rb") as file:
+                        model_info = pickle.load(file)
+
+                    # Validate model contents
+                    required_keys = ["model", "scaler", "feature_columns"]
+                    if all(key in model_info for key in required_keys):
+                        logger.info("Model loaded successfully")
+                        logger.debug(f"Model info keys: {list(model_info.keys())}")
+                        return model_info
+                    else:
+                        logger.warning(
+                            f"Model file at {model_path} missing required keys"
+                        )
+                        continue
+                except Exception as e:
+                    logger.error(f"Error reading model file at {model_path}: {str(e)}")
+                    continue
+
+        # If we get here, no valid model was found
+        raise FileNotFoundError(
+            f"Model file not found in any of the expected locations: {[str(p) for p in possible_paths]}"
+        )
+
+    except Exception as e:
+        logger.error(f"Error in load_model: {str(e)}", exc_info=True)
+        raise RuntimeError(f"Failed to load model: {str(e)}")
+
+
+# Global variable for model info
+model_info = None
 
 app = FastAPI(
     title="Mental Health Prediction API",
@@ -161,11 +236,26 @@ async def redoc_html():
     )
 
 
+@app.on_event("startup")
+async def startup_event():
+    """
+    Startup event to load model when the application starts
+    """
+    global model_info
+    try:
+        logger.info("Starting model loading process")
+        model_info = load_model()
+        logger.info("Model loaded successfully during startup")
+    except Exception as e:
+        logger.error(f"Failed to load model during startup: {str(e)}")
+        model_info = None
+
+
 # Updating the model loading code with better error handling
 def load_model():
     try:
         # Import the GradientDescentLinearRegression class
-        from model.gradient_descent import GradientDescentLinearRegression
+        # from model.gradient_descent import GradientDescentLinearRegression
 
         # Ensure the correct file path to the model
         model_path = os.path.join(
