@@ -5,7 +5,7 @@ services:
     rootDir: .  # Add this line
     buildCommand: |
       python -m pip install --upgrade pip
-      pip install -r api/requirements.txt
+      cd api && pip install -r requirements.txt
     startCommand: cd api && uvicorn main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
