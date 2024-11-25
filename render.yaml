@@ -11,4 +11,4 @@ services:
       - key: PYTHON_VERSION
         value: 3.9.0
       - key: PYTHONPATH
-        value: /opt/render/project/src/api
+        value: /opt/render/project/api
